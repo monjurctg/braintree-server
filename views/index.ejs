@@ -1,0 +1,60 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error</title>
+    <script src="https://js.braintreegateway.com/web/dropin/1.42.0/js/dropin.min.js"></script>
+</head>
+
+<body>
+    <h1>Hello World</h1>
+    <div id="dropin-container"></div>
+    <button id="submit-button">Pay</button>
+
+    <script type="text/javascript">
+        fetch("/client_token")
+            .then(function(response) {
+                return response.text();
+            })
+            .then(function(clientToken) {
+                return braintree.dropin.create({
+                    authorization: clientToken,
+                    container: '#dropin-container'
+                });
+            })
+            .then(function(dropinInstance) {
+                const submitButton = document.getElementById('submit-button');
+                submitButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+
+                    dropinInstance.requestPaymentMethod(function(err, payload) {
+                        if (err) {
+                            console.error(err);
+                            return;
+                        }
+
+                        // Send the payment nonce to your server
+                        fetch('/checkout', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ nonce: payload.nonce })
+                        })
+                        .then(function(response) {
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            // Handle response from server
+                            console.log(data);
+                        })
+                        .catch(function(error) {
+                            console.error('Error:', error);
+                        });
+                    });
+                });
+            })
+            .catch(function(error) {
+                console.error('Error:', error);
+            });
+    </script>
+</body>
